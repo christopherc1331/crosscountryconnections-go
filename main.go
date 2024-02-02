@@ -50,15 +50,12 @@ func main() {
 	}
 	http.HandleFunc("/", handlerSample)
 
-	log.Fatal(http.ListenAndServe(":8000", nil))
+	port, err := getEnvVar("PORT")
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
 
-func connectToMongoAndReturnInstance() *mongo.Client {
-	fmt.Println("Connecting to db...")
-
-	urlKey := "MONGO_URL"
-	// Get an environment variable's value, receiving an error if it is not set or is empty.
-	connectionURI := os.Getenv(urlKey)
+func getEnvVar(key string) (string, error) {
+	connectionURI := os.Getenv(key)
 	if connectionURI == "" {
 
 		// Load an .env file and set the key-value pairs as environment variables.
@@ -66,13 +63,21 @@ func connectToMongoAndReturnInstance() *mongo.Client {
 			panic(err)
 		}
 
-		valFromDotEnv, err := env.MustGet(urlKey)
+		valFromDotEnv, err := env.MustGet(key)
 		if err != nil {
-			log.Fatal("MONGO_URL is not set")
+			log.Fatal(fmt.Sprintf("%s is not set", key))
 		}
 
-		connectionURI = valFromDotEnv
+		return valFromDotEnv, err
 	}
+
+	return connectionURI, nil
+}
+
+func connectToMongoAndReturnInstance() *mongo.Client {
+	fmt.Println("Connecting to db...")
+
+	connectionURI, err := getEnvVar("MONGO_URL")
 
 	// Set client options
 	clientOptions := options.Client().ApplyURI(connectionURI)
@@ -88,6 +93,7 @@ func connectToMongoAndReturnInstance() *mongo.Client {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println("Connected to MongoDB!")
 	return client
 }
