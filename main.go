@@ -52,6 +52,8 @@ func main() {
 
 	port, err := getEnvVar("PORT")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	// log port listening on
+	fmt.Println("Listening on port " + port + "...")
 }
 
 func getEnvVar(key string) (string, error) {
