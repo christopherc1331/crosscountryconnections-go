@@ -1,10 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/gofor-little/env"
+	_ "github.com/mattn/go-sqlite3"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 type Film struct {
@@ -13,9 +20,25 @@ type Film struct {
 }
 
 func main() {
-	fmt.Println("Hello World!")
+	client := connectToMongoAndReturnInstance()
+	// query client and print all items collection called "sanity"
+	collection := client.Database("test").Collection("foobar")
+	cursor, err := collection.Find(context.Background(), bson.D{{}})
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	h1 := func(w http.ResponseWriter, r *http.Request) {
+	// iterate through the cursor and print each document
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(result)
+	}
+
+	handlerSample := func(w http.ResponseWriter, r *http.Request) {
 		tmpl := template.Must(template.ParseFiles("index.html"))
 		films := map[string][]Film{
 			"films": {
@@ -25,7 +48,46 @@ func main() {
 			}}
 		tmpl.Execute(w, films)
 	}
-	http.HandleFunc("/", h1)
+	http.HandleFunc("/", handlerSample)
 
 	log.Fatal(http.ListenAndServe(":8000", nil))
+}
+
+func connectToMongoAndReturnInstance() *mongo.Client {
+	fmt.Println("Connecting to db...")
+
+	urlKey := "MONGO_URL"
+	// Get an environment variable's value, receiving an error if it is not set or is empty.
+	connectionURI := os.Getenv(urlKey)
+	if connectionURI == "" {
+
+		// Load an .env file and set the key-value pairs as environment variables.
+		if err := env.Load(".env"); err != nil {
+			panic(err)
+		}
+
+		valFromDotEnv, err := env.MustGet(urlKey)
+		if err != nil {
+			log.Fatal("MONGO_URL is not set")
+		}
+
+		connectionURI = valFromDotEnv
+	}
+
+	// Set client options
+	clientOptions := options.Client().ApplyURI(connectionURI)
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(context.Background(), clientOptions)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Ping the MongoDB server to check if the connection is successful
+	err = client.Ping(context.Background(), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Connected to MongoDB!")
+	return client
 }
