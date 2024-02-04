@@ -21,6 +21,15 @@ type Film struct {
 	Director string
 }
 
+type Article struct {
+	_id           primitive.ObjectID `bson:"_id"`
+	Title         string             `bson:"title"`
+	Date          string             `bson:"date"`
+	Location      string             `bson:"location"`
+	TextPrimary   string             `bson:"textPrimary"`
+	TextSecondary string             `bson:"textSecondary"`
+}
+
 func main() {
 	client := connectToMongoAndReturnInstance()
 	router := mux.NewRouter()
@@ -58,23 +67,30 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 
 	client := connectToMongoAndReturnInstance()
 	articleCollection := client.Database("test").Collection("articles")
-	objectId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		log.Fatal(err)
+	objectId, objectIdErr := primitive.ObjectIDFromHex(id)
+	if objectIdErr != nil {
+		log.Fatal(objectIdErr)
 	}
 
 	filter := bson.D{{"_id", objectId}}
 
 	var result bson.M
-	err = articleCollection.FindOne(context.Background(), filter).Decode(&result)
-	if err != nil {
-		log.Fatal(err)
+	dataFetchErr := articleCollection.FindOne(context.Background(), filter).Decode(&result)
+	if dataFetchErr != nil {
+		log.Fatal(dataFetchErr)
 	}
 
-	fmt.Println(result)
+	var article Article
+	bsonBytes, _ := bson.Marshal(result)
+	bson.Unmarshal(bsonBytes, &article)
+	tmpl := template.Must(template.ParseFiles("article.html"))
+	templateErr := tmpl.Execute(w, article)
+	if templateErr != nil {
+		log.Fatal(templateErr)
+	}
 
 	// write result to response
-	fmt.Fprintln(w, result)
+	//fmt.Fprintln(w, result)
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
