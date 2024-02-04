@@ -4,6 +4,7 @@ go 1.21.6
 
 require (
 	github.com/gofor-little/env v1.0.16
+	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	go.mongodb.org/mongo-driver v1.13.1
 )

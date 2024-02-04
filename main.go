@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/gofor-little/env"
+	"github.com/gorilla/mux"
 	_ "github.com/mattn/go-sqlite3"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"html/template"
@@ -21,6 +23,7 @@ type Film struct {
 
 func main() {
 	client := connectToMongoAndReturnInstance()
+	router := mux.NewRouter()
 	// query client and print all items collection called "sanity"
 	collection := client.Database("test").Collection("foobar")
 	cursor, err := collection.Find(context.Background(), bson.D{{}})
@@ -38,22 +41,51 @@ func main() {
 		fmt.Println(result)
 	}
 
-	handlerSample := func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("index.html"))
-		films := map[string][]Film{
-			"films": {
-				{Title: "The Godfather", Director: "Francis Ford Coppola"},
-				{Title: "Blade Runner", Director: "Ridley Scott"},
-				{Title: "The Thing", Director: "John Carpenter"},
-			}}
-		tmpl.Execute(w, films)
-	}
-	http.HandleFunc("/", handlerSample)
+	router.HandleFunc("/", handlerSample)
+	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")
 
 	port, err := getEnvVar("PORT")
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
-	// log port listening on
+
 	fmt.Println("Listening on port " + port + "...")
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
+}
+
+func getArticle(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	fmt.Fprintln(w, "Article request with id:", id)
+
+	client := connectToMongoAndReturnInstance()
+	articleCollection := client.Database("test").Collection("articles")
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	filter := bson.D{{"_id", objectId}}
+
+	var result bson.M
+	err = articleCollection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(result)
+
+	// write result to response
+	fmt.Fprintln(w, result)
+}
+
+func handlerSample(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("index.html"))
+	films := map[string][]Film{
+		"films": {
+			{Title: "The Godfather", Director: "Francis Ford Coppola"},
+			{Title: "Blade Runner", Director: "Ridley Scott"},
+			{Title: "The Thing", Director: "John Carpenter"},
+		}}
+	tmpl.Execute(w, films)
 }
 
 func getEnvVar(key string) (string, error) {
