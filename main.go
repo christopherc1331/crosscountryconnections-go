@@ -33,17 +33,14 @@ func main() {
 	client := connectToMongoAndReturnInstance()
 	router := mux.NewRouter()
 
-	// CORS middleware
 	router.Use(corsMiddleware)
 
-	// query client and print all items collection called "sanity"
 	collection := client.Database("test").Collection("foobar")
 	cursor, err := collection.Find(context.Background(), bson.D{{}})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// iterate through the cursor and print each document
 	for cursor.Next(context.Background()) {
 		var result bson.M
 		err := cursor.Decode(&result)
@@ -53,7 +50,6 @@ func main() {
 		fmt.Println(result)
 	}
 
-	// kill conn
 	connKillErr := client.Disconnect(context.Background())
 	if connKillErr != nil {
 		log.Fatal(connKillErr)
@@ -71,7 +67,6 @@ func main() {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -82,7 +77,6 @@ func corsMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Call the next handler in the chain
 		next.ServeHTTP(w, r)
 	})
 }
@@ -90,7 +84,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 func getArticle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
-	fmt.Fprintln(w, "Article request with id:", id)
+	log.Println("Article request with id:", id)
 
 	client := connectToMongoAndReturnInstance()
 	articleCollection := client.Database("test").Collection("articles")
