@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gofor-little/env"
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,6 +32,10 @@ type Article struct {
 func main() {
 	client := connectToMongoAndReturnInstance()
 	router := mux.NewRouter()
+
+	// CORS middleware
+	router.Use(corsMiddleware)
+
 	// query client and print all items collection called "sanity"
 	collection := client.Database("test").Collection("foobar")
 	cursor, err := collection.Find(context.Background(), bson.D{{}})
@@ -50,6 +53,12 @@ func main() {
 		fmt.Println(result)
 	}
 
+	// kill conn
+	connKillErr := client.Disconnect(context.Background())
+	if connKillErr != nil {
+		log.Fatal(connKillErr)
+	}
+
 	router.HandleFunc("/", handlerSample)
 	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")
 
@@ -58,6 +67,24 @@ func main() {
 	fmt.Println("Listening on port " + port + "...")
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Allow preflight requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Call the next handler in the chain
+		next.ServeHTTP(w, r)
+	})
 }
 
 func getArticle(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +116,11 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(templateErr)
 	}
 
-	// write result to response
-	//fmt.Fprintln(w, result)
+	// kill conn
+	connKillErr := client.Disconnect(context.Background())
+	if connKillErr != nil {
+		log.Fatal(connKillErr)
+	}
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
