@@ -79,14 +79,15 @@ func main() {
 	router.HandleFunc("/", getIndex)
 	router.HandleFunc("/sample", handlerSample)
 	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")
+	router.HandleFunc("/404", get404).Methods("GET")
 
 	// Add a custom 404 handler
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log the request path
 		log.Printf("404 Not Found: %s", r.URL.Path)
 
-		// Send a 404 response
-		http.NotFound(w, r)
+		tmpl := template.Must(template.ParseFiles("./static/html/404.html"))
+		tmpl.Execute(w, nil)
 	})
 
 	printRoutes(router)
@@ -96,6 +97,11 @@ func main() {
 	fmt.Println("Listening on port " + port + "...")
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
+}
+
+func get404(w http.ResponseWriter, r *http.Request) {
+	tmpl := template.Must(template.ParseFiles("./static/html/404.html"))
+	tmpl.Execute(w, nil)
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
