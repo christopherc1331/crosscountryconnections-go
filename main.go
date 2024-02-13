@@ -132,7 +132,7 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	bsonBytes, _ := bson.Marshal(result)
 	bson.Unmarshal(bsonBytes, &article)
-	tmpl := template.Must(template.ParseFiles("article.html"))
+	tmpl := template.Must(template.ParseFiles("./templates/article.html"))
 	templateErr := tmpl.Execute(w, article)
 	if templateErr != nil {
 		log.Fatal(templateErr)
