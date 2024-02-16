@@ -22,6 +22,7 @@ type Film struct {
 
 type Article struct {
 	_id           primitive.ObjectID `bson:"_id"`
+	Img           string             `bson:"img"`
 	Title         string             `bson:"title"`
 	Date          string             `bson:"date"`
 	Location      string             `bson:"location"`
