@@ -23,7 +23,7 @@
     ================================================== -->
     <script src="/static/js/modernizr.js"></script>
     <script src="/static/js/pace.min.js"></script>
-    <script src="/static/js/htmx.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
     <!-- favicons
     ================================================== -->
@@ -126,74 +126,12 @@
                 <div class="featured">
 
                     <div class="featured__column featured__column--big">
-                        <div class="entry" style="background-image:url('/static/images/thumbs/featured/featured-horizon.png');">
-                            
-                            <div class="entry__content">
-                                <span class="entry__category"><a href="#0">Portland</a></span>
-                                <span class="entry__category"><a href="#0">Travel</a></span>
-                                <span class="entry__category"><a href="#0">Deep Thoughts</a></span>
-
-                                <h1><a href="articles/65bf21bf0b5805001219af9b" title="">Triple X on the Horizon.</a></h1>
-
-                                <div class="entry__info">
-                                    <a href="#0" class="entry__profile-pic">
-                                        <img class="avatar" src="/static/images/avatars/user-03.jpg" alt="">
-                                    </a>
-
-                                    <ul class="entry__meta">
-                                        <li><a href="#0">David Andrews</a></li>
-                                        <li>January 22, 2024</li>
-                                    </ul>
-                                </div>
-                            </div> <!-- end entry__content -->
-                            
-                        </div> <!-- end entry -->
+                        {{ .Highlighted1 }}
                     </div> <!-- end featured__big -->
 
                     <div class="featured__column featured__column--small">
-
-                        <div class="entry" style="background-image:url('/static/images/thumbs/featured/featured-back-roads.png');">
-                            
-                            <div class="entry__content">
-                                <span class="entry__category"><a href="#0">Management</a></span>
-
-                                <h1><a href="articles/65cc4caaf4ec1e001240594f" title="">Back Roads.</a></h1>
-
-                                <div class="entry__info">
-                                    <a href="#0" class="entry__profile-pic">
-                                        <img class="avatar" src="/static/images/avatars/user-03.jpg" alt="">
-                                    </a>
-
-                                    <ul class="entry__meta">
-                                        <li><a href="#0">John Doe</a></li>
-                                        <li>December 27, 2017</li>
-                                    </ul>
-                                </div>
-                            </div> <!-- end entry__content -->
-                          
-                        </div> <!-- end entry -->
-
-                        <div class="entry" style="background-image:url('/static/images/thumbs/featured/featured-plant.png');">
-
-                            <div class="entry__content">
-                                <span class="entry__category"><a href="#0">LifeStyle</a></span>
-
-                                <h1><a href="articles/65cef24d21e83d0012750418" title="">Striking gold.</a></h1>
-
-                                <div class="entry__info">
-                                    <a href="#0" class="entry__profile-pic">
-                                        <img class="avatar" src="/static/images/avatars/user-03.jpg" alt="">
-                                    </a>
-
-                                    <ul class="entry__meta">
-                                        <li><a href="#0">David Andrews</a></li>
-                                        <li>September 26, 2023</li>
-                                    </ul>
-                                </div>
-                            </div> <!-- end entry__content -->
-
-                        </div> <!-- end entry -->
-
+                        {{ .Highlighted2 }}
+                        {{ .Highlighted3 }}
                     </div> <!-- end featured__small -->
                 </div> <!-- end featured -->
 

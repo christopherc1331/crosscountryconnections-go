@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/gofor-little/env"
@@ -21,8 +22,12 @@ type Film struct {
 }
 
 type Article struct {
-	_id           primitive.ObjectID `bson:"_id"`
+	ObjectId      primitive.ObjectID `bson:"_id"`
+	Id            string             `bson:"id"`
 	Img           string             `bson:"img"`
+	Author        string             `bson:"author"`
+	Rank          int                `bson:"rank"`
+	Categories    []string           `bson:"categories"`
 	Title         string             `bson:"title"`
 	Date          string             `bson:"date"`
 	Location      string             `bson:"location"`
@@ -80,7 +85,7 @@ func main() {
 
 	router.HandleFunc("/", getIndex)
 	router.HandleFunc("/sample", handlerSample)
-	router.HandleFunc("/articles/{id}", getArticle).Methods("GET")
+	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
 	router.HandleFunc("/404", get404).Methods("GET")
 
 	// Add a custom 404 handler
@@ -107,11 +112,45 @@ func get404(w http.ResponseWriter, r *http.Request) {
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
+	ranks := []int{1, 2, 3}
+	articles := make(map[string]template.HTML)
+	htmlCh := make(chan struct {
+		rank    int
+		article string
+	}, len(ranks))
+	errCh := make(chan error, len(ranks))
+
+	for _, rank := range ranks {
+		go func(rank int) {
+			article, err := getHighlightedArticleByRank(rank)
+			if err != nil {
+				errCh <- err
+				return
+			}
+			htmlCh <- struct {
+				rank    int
+				article string
+			}{rank, article}
+		}(rank)
+	}
+
+	for range ranks {
+		select {
+		case result := <-htmlCh:
+			articles[fmt.Sprintf("Highlighted%d", result.rank)] = template.HTML(result.article)
+		case err := <-errCh:
+			log.Fatal(err)
+		}
+	}
+
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	tmpl.Execute(w, nil)
+	templateErr := tmpl.Execute(w, articles)
+	if templateErr != nil {
+		log.Fatal(templateErr)
+	}
 }
 
-func getArticle(w http.ResponseWriter, r *http.Request) {
+func getArticleById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	log.Println("Article request with id:", id)
@@ -134,6 +173,7 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 	var article Article
 	bsonBytes, _ := bson.Marshal(result)
 	bson.Unmarshal(bsonBytes, &article)
+	article.Id = article.ObjectId.Hex()
 	tmpl := template.Must(template.ParseFiles("./templates/article.html"))
 	templateErr := tmpl.Execute(w, article)
 	if templateErr != nil {
@@ -145,6 +185,43 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 	if connKillErr != nil {
 		log.Fatal(connKillErr)
 	}
+}
+
+func getHighlightedArticleByRank(rankId int) (string, error) {
+	log.Println("Article request with rankId:", rankId)
+
+	client := connectToMongoAndReturnInstance()
+	articleCollection := client.Database("test").Collection("articles")
+
+	filter := bson.D{{"rank", rankId}}
+
+	var result bson.M
+	dataFetchErr := articleCollection.FindOne(context.Background(), filter).Decode(&result)
+	if dataFetchErr != nil {
+		return "", dataFetchErr
+	}
+
+	var article Article
+	bsonBytes, _ := bson.Marshal(result)
+	bson.Unmarshal(bsonBytes, &article)
+	article.Id = article.ObjectId.Hex()
+
+	// Print out the Id field of the article for debugging purposes
+	log.Println("Article ID:", article.Id)
+	tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
+	var tpl bytes.Buffer
+	templateErr := tmpl.Execute(&tpl, article)
+	if templateErr != nil {
+		return "", templateErr
+	}
+
+	// kill conn
+	connKillErr := client.Disconnect(context.Background())
+	if connKillErr != nil {
+		return "", connKillErr
+	}
+
+	return tpl.String(), nil
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
