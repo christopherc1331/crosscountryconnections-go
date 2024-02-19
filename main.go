@@ -14,6 +14,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 )
 
 type Film struct {
@@ -35,8 +36,10 @@ type Article struct {
 	TextSecondary string             `bson:"textSecondary"`
 }
 
+var client *mongo.Client
+
 func main() {
-	client := connectToMongoAndReturnInstance()
+	client = connectToMongoAndReturnInstance()
 	router := mux.NewRouter()
 
 	collection := client.Database("test").Collection("foobar")
@@ -52,11 +55,6 @@ func main() {
 			log.Fatal(err)
 		}
 		fmt.Println(result)
-	}
-
-	connKillErr := client.Disconnect(context.Background())
-	if connKillErr != nil {
-		log.Fatal(connKillErr)
 	}
 
 	router.Handle("/static/{file:.*}", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
@@ -99,8 +97,20 @@ func main() {
 
 	printRoutes(router)
 
-	port, err := getEnvVar("PORT")
+	// Listen for an interrupt signal
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		// Disconnect the client when an interrupt signal is received
+		err := client.Disconnect(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}()
 
+	port, err := getEnvVar("PORT")
 	fmt.Println("Listening on port " + port + "...")
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), router))
@@ -129,7 +139,6 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	log.Println("Article request with id:", id)
 
-	client := connectToMongoAndReturnInstance()
 	articleCollection := client.Database("test").Collection("articles")
 	objectId, objectIdErr := primitive.ObjectIDFromHex(id)
 	if objectIdErr != nil {
@@ -153,16 +162,9 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	if templateErr != nil {
 		log.Fatal(templateErr)
 	}
-
-	// kill conn
-	connKillErr := client.Disconnect(context.Background())
-	if connKillErr != nil {
-		log.Fatal(connKillErr)
-	}
 }
 
 func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
-	client := connectToMongoAndReturnInstance()
 	articleCollection := client.Database("test").Collection("articles")
 
 	// Create a cursor for the query
@@ -200,12 +202,6 @@ func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
 		return nil, err
 	}
 
-	// kill conn
-	connKillErr := client.Disconnect(context.Background())
-	if connKillErr != nil {
-		return nil, connKillErr
-	}
-
 	return articles, nil
 }
 
@@ -221,8 +217,8 @@ func handlerSample(w http.ResponseWriter, r *http.Request) {
 }
 
 func getEnvVar(key string) (string, error) {
-	connectionURI := os.Getenv(key)
-	if connectionURI == "" {
+	envVarVal := os.Getenv(key)
+	if envVarVal == "" {
 
 		// Load an .env file and set the key-value pairs as environment variables.
 		if err := env.Load(".env"); err != nil {
@@ -237,7 +233,7 @@ func getEnvVar(key string) (string, error) {
 		return valFromDotEnv, err
 	}
 
-	return connectionURI, nil
+	return envVarVal, nil
 }
 
 func connectToMongoAndReturnInstance() *mongo.Client {
