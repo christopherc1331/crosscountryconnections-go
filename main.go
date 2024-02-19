@@ -112,35 +112,9 @@ func get404(w http.ResponseWriter, r *http.Request) {
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
-	ranks := []int{1, 2, 3}
-	articles := make(map[string]template.HTML)
-	htmlCh := make(chan struct {
-		rank    int
-		article string
-	}, len(ranks))
-	errCh := make(chan error, len(ranks))
-
-	for _, rank := range ranks {
-		go func(rank int) {
-			article, err := getHighlightedArticleByRank(rank)
-			if err != nil {
-				errCh <- err
-				return
-			}
-			htmlCh <- struct {
-				rank    int
-				article string
-			}{rank, article}
-		}(rank)
-	}
-
-	for range ranks {
-		select {
-		case result := <-htmlCh:
-			articles[fmt.Sprintf("Highlighted%d", result.rank)] = template.HTML(result.article)
-		case err := <-errCh:
-			log.Fatal(err)
-		}
+	articles, err := getHighlightedArticlesByRank()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
@@ -187,41 +161,52 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getHighlightedArticleByRank(rankId int) (string, error) {
-	log.Println("Article request with rankId:", rankId)
-
+func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
 	client := connectToMongoAndReturnInstance()
 	articleCollection := client.Database("test").Collection("articles")
 
-	filter := bson.D{{"rank", rankId}}
+	// Create a cursor for the query
+	opts := options.Find().SetSort(bson.D{{"rank", 1}}).SetLimit(3)
+	cursor, err := articleCollection.Find(context.Background(), bson.D{{}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
 
-	var result bson.M
-	dataFetchErr := articleCollection.FindOne(context.Background(), filter).Decode(&result)
-	if dataFetchErr != nil {
-		return "", dataFetchErr
+	articles := make(map[string]template.HTML)
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			return nil, err
+		}
+
+		var article Article
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &article)
+		article.Id = article.ObjectId.Hex()
+
+		tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
+		var tpl bytes.Buffer
+		templateErr := tmpl.Execute(&tpl, article)
+		if templateErr != nil {
+			return nil, templateErr
+		}
+
+		articles[fmt.Sprintf("Highlighted%d", article.Rank)] = template.HTML(tpl.String())
 	}
 
-	var article Article
-	bsonBytes, _ := bson.Marshal(result)
-	bson.Unmarshal(bsonBytes, &article)
-	article.Id = article.ObjectId.Hex()
-
-	// Print out the Id field of the article for debugging purposes
-	log.Println("Article ID:", article.Id)
-	tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
-	var tpl bytes.Buffer
-	templateErr := tmpl.Execute(&tpl, article)
-	if templateErr != nil {
-		return "", templateErr
+	if err := cursor.Err(); err != nil {
+		return nil, err
 	}
 
 	// kill conn
 	connKillErr := client.Disconnect(context.Background())
 	if connKillErr != nil {
-		return "", connKillErr
+		return nil, connKillErr
 	}
 
-	return tpl.String(), nil
+	return articles, nil
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
