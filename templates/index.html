@@ -42,7 +42,7 @@
             <div class="header__content row">
 
                 <div class="header__logo">
-                    <a class="logo" href="index.html">
+                    <a class="logo" href="/">
                         <img src="/static/images/logo.svg" alt="Homepage">
                     </a>
                 </div> <!-- end header__logo -->
@@ -86,7 +86,7 @@
                     <h2 class="header__nav-heading h6">Site Navigation</h2>
 
                     <ul class="header__nav">
-                        <li class="current"><a href="index.html" title="">Home</a></li>
+                        <li class="current"><a href="/" title="">Home</a></li>
                         <li class="has-children">
                             <a href="#0" title="">Categories</a>
                             <ul class="sub-menu">
@@ -149,6 +149,10 @@
             <div class="masonry">
 
                 <div class="grid-sizer"></div>
+
+                {{ range .ArticleCards }}
+                    {{ . }}
+                {{ end }}
 
                 <article class="masonry__brick entry format-standard" data-aos="fade-up">
                         
@@ -521,19 +525,19 @@
 
                     <div class="entry__thumb">
                         <a href="../single-standard.html" class="entry__thumb-link">
-                            <img src="/static/images/thumbs/masonry/sydney-400.jpg" 
+                            <img src="/static/images/thumbs/masonry/sydney-400.jpg"
                                     srcset="/static/images/thumbs/masonry/sydney-400.jpg 1x, images/thumbs/masonry/sydney-800.jpg 2x" alt="">
                         </a>
                     </div>
 
                     <div class="entry__text">
                         <div class="entry__header">
-                            
+
                             <div class="entry__date">
                                 <a href="../single-standard.html">December 10, 2017</a>
                             </div>
                             <h1 class="entry__title"><a href="../single-standard.html">Planning Your First Trip to Sydney.</a></h1>
-                            
+
                         </div>
                         <div class="entry__excerpt">
                             <p>

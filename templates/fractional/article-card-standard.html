@@ -1,0 +1,32 @@
+<article class="masonry__brick entry format-standard" data-aos="fade-up">
+
+    <div class="entry__thumb">
+        <a href="articles/{{ .Id }}" class="entry__thumb-link">
+            <img src="{{ .Img }}" alt="">
+        </a>
+    </div>
+
+    <div class="entry__text">
+        <div class="entry__header">
+
+            <div class="entry__date">
+                <a href="articles/{{ .Id }}">{{ .Date }}</a>
+            </div>
+            <h1 class="entry__title"><a href="articles/{{ .Id }}">{{ .Title }}</a></h1>
+
+        </div>
+        <div class="entry__excerpt">
+            <p>
+                {{ .TextPrimary }}
+            </p>
+        </div>
+        <div class="entry__meta">
+                            <span class="entry__meta-links">
+                                {{ range .Categories }}
+                                    <a href="categories/{{ . }}">{{ . }}</a>
+                                {{ end }}
+                            </span>
+        </div>
+    </div>
+
+</article>

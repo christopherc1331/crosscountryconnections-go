@@ -24,6 +24,7 @@ type Film struct {
 
 type Article struct {
 	ObjectId      primitive.ObjectID `bson:"_id"`
+	Type          string             `bson:"type"`
 	Id            string             `bson:"id"`
 	Img           string             `bson:"img"`
 	Author        string             `bson:"author"`
@@ -121,14 +122,31 @@ func get404(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
+func appendTemplateVars(templateVarsMap map[string]interface{}, articles map[string]interface{}) map[string]interface{} {
+	for k, v := range articles {
+		templateVarsMap[k] = v
+	}
+	return templateVarsMap
+}
+
 func getIndex(w http.ResponseWriter, r *http.Request) {
-	articles, err := getHighlightedArticlesByRank()
+	templateVarsMap := make(map[string]interface{})
+	highlightedArticles, err := getHighlightedArticlesByRank()
 	if err != nil {
 		log.Fatal(err)
 	}
+	// add the highlighted articles to the templateVarsMap
+	templateVarsMap = appendTemplateVars(templateVarsMap, highlightedArticles)
+
+	articleCards, err := getArticleCardsOrderedByDate()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// add the article cards to the templateVarsMap
+	templateVarsMap = appendTemplateVars(templateVarsMap, articleCards)
 
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	templateErr := tmpl.Execute(w, articles)
+	templateErr := tmpl.Execute(w, templateVarsMap)
 	if templateErr != nil {
 		log.Fatal(templateErr)
 	}
@@ -164,18 +182,19 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
+func getHighlightedArticlesByRank() (map[string]interface{}, error) {
 	articleCollection := client.Database("test").Collection("articles")
 
 	// Create a cursor for the query
-	opts := options.Find().SetSort(bson.D{{"rank", 1}}).SetLimit(3)
+	// filter out articles with a rank of 0
+	opts := options.Find().SetSort(bson.D{{"rank", 1}})
 	cursor, err := articleCollection.Find(context.Background(), bson.D{{}}, opts)
 	if err != nil {
 		return nil, err
 	}
 	defer cursor.Close(context.Background())
 
-	articles := make(map[string]template.HTML)
+	articles := make(map[string]interface{})
 	for cursor.Next(context.Background()) {
 		var result bson.M
 		err := cursor.Decode(&result)
@@ -187,6 +206,7 @@ func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
 		bsonBytes, _ := bson.Marshal(result)
 		bson.Unmarshal(bsonBytes, &article)
 		article.Id = article.ObjectId.Hex()
+		log.Println(article.Title, article.Rank)
 
 		tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
 		var tpl bytes.Buffer
@@ -203,6 +223,68 @@ func getHighlightedArticlesByRank() (map[string]template.HTML, error) {
 	}
 
 	return articles, nil
+}
+
+func getArticleCardsOrderedByDate() (map[string]interface{}, error) {
+	articleCollection := client.Database("test").Collection("articles")
+
+	// Create a cursor for the query
+	opts := options.Find().SetSort(bson.D{{"date", 1}})
+	cursor, err := articleCollection.Find(context.Background(), bson.D{{}}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.Background())
+
+	articlesArray := make([]interface{}, 0)
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			return nil, err
+		}
+
+		var article Article
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &article)
+		article.Id = article.ObjectId.Hex()
+
+		// Skip articles without a rank
+		if article.Rank != 0 {
+			continue
+		}
+
+		var tmpl *template.Template
+		switch article.Type {
+		case "standard":
+			tmpl = template.Must(template.ParseFiles("./templates/fractional/article-card-standard.html"))
+		case "quote":
+			tmpl = template.Must(template.ParseFiles("./templates/fractional/article-card-quote.html"))
+		case "gallery":
+			tmpl = template.Must(template.ParseFiles("./templates/fractional/article-card-gallery.html"))
+		case "audio":
+			tmpl = template.Must(template.ParseFiles("./templates/fractional/article-card-audio.html"))
+		case "video":
+			tmpl = template.Must(template.ParseFiles("./templates/fractional/article-card-video.html"))
+		}
+		var tpl bytes.Buffer
+		templateErr := tmpl.Execute(&tpl, article)
+		if templateErr != nil {
+			return nil, templateErr
+		}
+
+		articlesArray = append(articlesArray, template.HTML(tpl.String()))
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	articles := make(map[string]interface{})
+	articles["ArticleCards"] = articlesArray
+
+	return articles, nil
+
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
