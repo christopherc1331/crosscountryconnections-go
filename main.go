@@ -27,6 +27,7 @@ type Article struct {
 	Type          string             `bson:"type"`
 	Id            string             `bson:"id"`
 	Img           string             `bson:"img"`
+	Imgs          []string           `bson:"imgs"`
 	Author        string             `bson:"author"`
 	Rank          int                `bson:"rank"`
 	Categories    []string           `bson:"categories"`
