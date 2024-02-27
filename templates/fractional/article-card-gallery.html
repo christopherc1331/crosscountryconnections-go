@@ -1,0 +1,36 @@
+<article class="masonry__brick entry format-gallery" data-aos="fade-up">
+
+    <div class="entry__thumb slider">
+        <div class="slider__slides">
+            {{ range .Imgs }}
+            <div class="slider__slide">
+                <img src="{{ . }}" alt="">
+            </div>
+            {{ end }}
+        </div>
+    </div>
+
+    <div class="entry__text">
+        <div class="entry__header">
+
+            <div class="entry__date">
+                <a href="articles/{{ .Id }}?type=gallery">{{ .Date }}</a>
+            </div>
+            <h1 class="entry__title"><a href="articles/{{ .Id }}?type=gallery">{{ .Title }}</a></h1>
+
+        </div>
+        <div class="entry__excerpt">
+            <p>
+                {{ .TextPrimary }}
+            </p>
+        </div>
+        <div class="entry__meta">
+                            <span class="entry__meta-links">
+                                {{ range .Categories }}
+                                    <a href="categories/{{ . }}">{{ . }}</a>
+                                {{ end }}
+                            </span>
+        </div>
+    </div>
+
+</article> <!-- end article -->
