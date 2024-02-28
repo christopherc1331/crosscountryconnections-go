@@ -178,7 +178,20 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	bsonBytes, _ := bson.Marshal(result)
 	bson.Unmarshal(bsonBytes, &article)
 	article.Id = article.ObjectId.Hex()
-	tmpl := template.Must(template.ParseFiles("./templates/article.html"))
+
+	// Get the query parameters from the request
+	queryParams := r.URL.Query()
+
+	// Get the 'type' query parameter
+	articleType := queryParams.Get("type")
+
+	// if the 'type' query parameter is set, use the specified template
+	var tmpl *template.Template
+	if articleType != "" {
+		tmpl = template.Must(template.ParseFiles(fmt.Sprintf("./templates/article-%s.html", articleType)))
+	} else {
+		tmpl = template.Must(template.ParseFiles("./templates/article.html"))
+	}
 	templateErr := tmpl.Execute(w, article)
 	if templateErr != nil {
 		log.Fatal(templateErr)
