@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 )
 
 type Film struct {
@@ -86,6 +87,7 @@ func main() {
 	router.HandleFunc("/", getIndex)
 	router.HandleFunc("/sample", handlerSample)
 	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
+	router.HandleFunc("/articles/highlighted/{rank}", getHighlightedArticleHtmlByRankHandler).Methods("GET")
 	router.HandleFunc("/404", get404).Methods("GET")
 
 	// Add a custom 404 handler
@@ -224,6 +226,56 @@ func getHighlightedArticlesByRank() (map[string]interface{}, error) {
 	}
 
 	return articles, nil
+}
+
+func getHighlightedArticleHtmlByRankHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	rank, err := strconv.Atoi(vars["rank"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	html, err := getHighlightedArticleHtmlByRank(rank)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(html))
+}
+
+func getHighlightedArticleHtmlByRank(rank int) (template.HTML, error) {
+	// Connect to the MongoDB collection
+	articleCollection := client.Database("test").Collection("articles")
+
+	// Query the collection to find an article with the specified rank
+	filter := bson.D{{"rank", rank}}
+	var result bson.M
+	err := articleCollection.FindOne(context.Background(), filter).Decode(&result)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse the article into the Article struct
+	var article Article
+	bsonBytes, _ := bson.Marshal(result)
+	bson.Unmarshal(bsonBytes, &article)
+	article.Id = article.ObjectId.Hex()
+
+	// Parse the template file
+	tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
+
+	// Execute the template with the article as the data to be rendered
+	var tpl bytes.Buffer
+	err = tmpl.Execute(&tpl, article)
+	if err != nil {
+		return "", err
+	}
+
+	// Return the rendered HTML as a string
+	return template.HTML(tpl.String()), nil
 }
 
 func getArticleCardsOrderedByDate() (map[string]interface{}, error) {

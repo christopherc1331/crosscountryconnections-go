@@ -126,12 +126,12 @@
                 <div class="featured">
 
                     <div class="featured__column featured__column--big">
-                        {{ .Highlighted1 }}
+                        <div hx-get="/articles/highlighted/1" hx-trigger="load"></div>
                     </div> <!-- end featured__big -->
 
                     <div class="featured__column featured__column--small">
-                        {{ .Highlighted2 }}
-                        {{ .Highlighted3 }}
+                        <div hx-get="/articles/highlighted/2" hx-trigger="load"></div>
+                        <div hx-get="/articles/highlighted/3" hx-trigger="load"></div>
                     </div> <!-- end featured__small -->
                 </div> <!-- end featured -->
 
