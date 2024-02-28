@@ -1,7 +1,7 @@
 <div class="entry" style="background-image:url('{{ .Img }}');">
     <div class="entry__content">
         {{ range .Categories }}
-            <span class="entry__category"><a href="#0">{{ . }}</a></span>
+            <span class="entry__category"><a href="?category={{ . }}">{{ . }}</a></span>
         {{ end }}
 
         <h1><a href="articles/{{ .Id }}" title="">{{ .Title }}.</a></h1>

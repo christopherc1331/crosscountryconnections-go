@@ -133,23 +133,16 @@ func appendTemplateVars(templateVarsMap map[string]interface{}, articles map[str
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
-	templateVarsMap := make(map[string]interface{})
-	highlightedArticles, err := getHighlightedArticlesByRank()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// add the highlighted articles to the templateVarsMap
-	templateVarsMap = appendTemplateVars(templateVarsMap, highlightedArticles)
+	queryParams := r.URL.Query()
+	category := queryParams.Get("category")
 
-	articleCards, err := getArticleCardsOrderedByDate()
+	articleCards, err := getArticleCardsOrderedByDate(category)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// add the article cards to the templateVarsMap
-	templateVarsMap = appendTemplateVars(templateVarsMap, articleCards)
 
 	tmpl := template.Must(template.ParseFiles("./templates/index.html"))
-	templateErr := tmpl.Execute(w, templateVarsMap)
+	templateErr := tmpl.Execute(w, articleCards)
 	if templateErr != nil {
 		log.Fatal(templateErr)
 	}
@@ -291,12 +284,20 @@ func getHighlightedArticleHtmlByRank(rank int) (template.HTML, error) {
 	return template.HTML(tpl.String()), nil
 }
 
-func getArticleCardsOrderedByDate() (map[string]interface{}, error) {
+func getArticleCardsOrderedByDate(category string) (map[string]interface{}, error) {
 	articleCollection := client.Database("test").Collection("articles")
+
+	// Create a filter for the query
+	var filter bson.D
+	if category != "" {
+		filter = bson.D{{"categories", category}}
+	} else {
+		filter = bson.D{{}}
+	}
 
 	// Create a cursor for the query
 	opts := options.Find().SetSort(bson.D{{"date", 1}})
-	cursor, err := articleCollection.Find(context.Background(), bson.D{{}}, opts)
+	cursor, err := articleCollection.Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
