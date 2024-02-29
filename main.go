@@ -132,8 +132,13 @@ func get404(w http.ResponseWriter, r *http.Request) {
 func getIndex(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
 	category := queryParams.Get("category")
+	page, err := strconv.Atoi(queryParams.Get("page"))
 
-	articleCards, err := getArticleCardsOrderedByDate(category)
+	// Store the incremented page value back in the query parameters
+	queryParams.Set("page", strconv.Itoa(page))
+	r.URL.RawQuery = queryParams.Encode()
+
+	articleCards, err := getArticleCardsOrderedByDate(category, page)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -339,7 +344,8 @@ func getHighlightedArticleHtmlByRank(rank int) (template.HTML, error) {
 	return template.HTML(tpl.String()), nil
 }
 
-func getArticleCardsOrderedByDate(category string) (map[string]interface{}, error) {
+func getArticleCardsOrderedByDate(category string, page int) (map[string]interface{}, error) {
+	pageSize := 13
 	articleCollection := client.Database("test").Collection("articles")
 
 	// Create a filter for the query
@@ -350,8 +356,15 @@ func getArticleCardsOrderedByDate(category string) (map[string]interface{}, erro
 		filter = bson.D{{}}
 	}
 
+	// Calculate the number of documents to skip
+	skip := int64((page - 1) * pageSize)
+
+	if skip < 0 {
+		skip = 0
+	}
+
 	// Create a cursor for the query
-	opts := options.Find().SetSort(bson.D{{"date", 1}})
+	opts := options.Find().SetSort(bson.D{{"date", 1}}).SetSkip(skip).SetLimit(int64(pageSize))
 	cursor, err := articleCollection.Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err

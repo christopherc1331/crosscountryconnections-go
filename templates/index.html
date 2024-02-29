@@ -140,7 +140,7 @@
             <div class="col-full">
                 <nav class="pgn">
                     <ul>
-                        <li><a class="pgn__prev" href="#0">Prev</a></li>
+                        <li><a class="pgn__prev" style="cursor: pointer;">Prev</a></li>
 <!--                        <li><a class="pgn__num" href="#0">1</a></li>-->
 <!--                        <li><span class="pgn__num current">2</span></li>-->
 <!--                        <li><a class="pgn__num" href="#0">3</a></li>-->
@@ -148,7 +148,7 @@
 <!--                        <li><a class="pgn__num" href="#0">5</a></li>-->
 <!--                        <li><span class="pgn__num dots">…</span></li>-->
 <!--                        <li><a class="pgn__num" href="#0">8</a></li>-->
-                        <li><a class="pgn__next" href="#0">Next</a></li>
+                        <li><a class="pgn__next" style="cursor: pointer;">Next</a></li>
                     </ul>
                 </nav>
             </div>
@@ -305,6 +305,31 @@
     <script src="/static/js/jquery-3.2.1.min.js"></script>
     <script src="/static/js/plugins.js"></script>
     <script src="/static/js/main.js"></script>
+    <script>
+        window.onload = function() {
+            let url = new URL(window.location.href);
+            let page = url.searchParams.get("page");
+            if (!page || page < 0) {
+                page = 0;
+            } else {
+                page = parseInt(page);
+            }
+
+
+            // Get the "Next" button
+            let nextButton = document.querySelector('.pgn__next');
+            // Get the "Prev" button
+            let prevButton = document.querySelector('.pgn__prev');
+
+            nextButton.setAttribute('href', `/?page=${page + 1}`);
+            // Ensure currentPage does not go below 0
+            if (page > 0) {
+                prevButton.setAttribute('href', `/?page=${page - 1}`);
+            } else {
+                prevButton.setAttribute('href', `/?page=0`);
+            }
+        }
+    </script>
 
 </body>
 
