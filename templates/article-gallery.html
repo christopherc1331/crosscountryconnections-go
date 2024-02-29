@@ -5,7 +5,7 @@
     <!--- basic page needs
     ================================================== -->
     <meta charset="utf-8">
-    <title>Standard Post Format - Philosophy</title>
+    <title>Gallery Post Format - Philosophy</title>
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -23,7 +23,6 @@
     ================================================== -->
     <script src="/static/js/modernizr.js"></script>
     <script src="/static/js/pace.min.js"></script>
-    <script src="/static/js/htmx.min.js"></script>
 
     <!-- favicons
     ================================================== -->
@@ -42,24 +41,24 @@
             <div class="header__content row">
 
                 <div class="header__logo">
-                    <a class="logo" href="index.html">
+                    <a class="logo" href="/static">
                         <img src="/static/images/logo.svg" alt="Homepage">
                     </a>
                 </div> <!-- end header__logo -->
 
                 <ul class="header__social">
+                    <!--                    <li>-->
+                    <!--                        <a href="#0"><i class="fa fa-facebook" aria-hidden="true"></i></a>-->
+                    <!--                    </li>-->
+                    <!--                    <li>-->
+                    <!--                        <a href="#0"><i class="fa fa-twitter" aria-hidden="true"></i></a>-->
+                    <!--                    </li>-->
                     <li>
-                        <a href="#0"><i class="fa fa-facebook" aria-hidden="true"></i></a>
+                        <a target="_blank" href="https://www.instagram.com/averagejoe_96701/"><i class="fa fa-instagram" aria-hidden="true"></i></a>
                     </li>
-                    <li>
-                        <a href="#0"><i class="fa fa-twitter" aria-hidden="true"></i></a>
-                    </li>
-                    <li>
-                        <a href="#0"><i class="fa fa-instagram" aria-hidden="true"></i></a>
-                    </li>
-                    <li>
-                        <a href="#0"><i class="fa fa-pinterest" aria-hidden="true"></i></a>
-                    </li>
+                    <!--                    <li>-->
+                    <!--                        <a href="#0"><i class="fa fa-pinterest" aria-hidden="true"></i></a>-->
+                    <!--                    </li>-->
                 </ul> <!-- end header__social -->
 
                 <a class="header__search-trigger" href="#0"></a>
@@ -86,25 +85,25 @@
                     <h2 class="header__nav-heading h6">Site Navigation</h2>
 
                     <ul class="header__nav">
-                        <li><a href="/" title="">Home</a></li>
+                        <li class="current"><a href="/" title="">Home</a></li>
                         <li class="has-children">
                             <a href="#0" title="">Categories</a>
                             <ul class="sub-menu">
-                            <li><a href="../category.html">Lifestyle</a></li>
-                            <li><a href="../category.html">Health</a></li>
-                            <li><a href="../category.html">Family</a></li>
-                            <li><a href="../category.html">Management</a></li>
-                            <li><a href="../category.html">Travel</a></li>
-                            <li><a href="../category.html">Work</a></li>
+                                <li><a href="../category.html">Lifestyle</a></li>
+                                <li><a href="../category.html">Health</a></li>
+                                <li><a href="../category.html">Family</a></li>
+                                <li><a href="../category.html">Management</a></li>
+                                <li><a href="../category.html">Travel</a></li>
+                                <li><a href="../category.html">Work</a></li>
                             </ul>
                         </li>
-                        <li class="has-children current">
+                        <li class="has-children">
                             <a href="#0" title="">Blog</a>
                             <ul class="sub-menu">
-                            <li><a href="../single-video.html">Video Post</a></li>
-                            <li><a href="../single-audio.html">Audio Post</a></li>
-                            <li><a href="../single-gallery.html">Gallery Post</a></li>
-                            <li><a href="../single-standard.html">Standard Post</a></li>
+                                <li><a href="../single-video.html">Video Post</a></li>
+                                <li><a href="../single-audio.html">Audio Post</a></li>
+                                <li><a href="../single-gallery.html">Gallery Post</a></li>
+                                <li><a href="../single-standard.html">Standard Post</a></li>
                             </ul>
                         </li>
                         <li><a href="../style-guide.html" title="">Styles</a></li>
@@ -126,16 +125,14 @@
     ================================================== -->
     <section class="s-content s-content--narrow s-content--no-padding-bottom">
 
-        <article class="row format-standard">
+        <article class="row format-gallery">
 
             <div class="s-content__header col-full">
                 <h1 class="s-content__header-title">
                     {{ .Title }}
                 </h1>
                 <ul class="s-content__header-meta">
-                    <li class="date">
-                        {{ .Date }}
-                    </li>
+                    <li class="date">{{ .Date }}</li>
                     <li class="cat">
                         In
                         {{ range .Categories }}
@@ -146,25 +143,27 @@
                     </li>
                 </ul>
             </div> <!-- end s-content__header -->
-
+    
             <div class="s-content__media col-full">
-                <div class="s-content__post-thumb">
-                    <img src="{{.Img}}"
-                         sizes="(max-width: 2000px) 100vw, 2000px" alt="" >
+                <div class="s-content__slider slider">
+                    <div class="slider__slides">
+                        {{ range .Imgs }}
+                            <div class="slider__slide">
+                                <img src="{{ . }}">
+                            </div>
+                        {{ end }}
+                    </div>
                 </div>
             </div> <!-- end s-content__media -->
 
             <div class="col-full s-content__main">
 
-                <p class="lead">
-                    {{ .TextPrimary }}
+                <p class="lead">{{ .TextPrimary }}</p>
+                
+                <p>{{ .TextSecondary }}
                 </p>
 
-                <p>
-                    {{ .TextSecondary }}
-                </p>
-            </div>    <!-- end s-content__main -->
-
+            </div>
         </article>
 
 
@@ -434,7 +433,7 @@
                     </article>
                 </div> <!-- end popular_posts -->
             </div> <!-- end popular -->
-
+            
             <div class="col-four md-six tab-full about">
                 <h3>About Philosophy</h3>
 
@@ -489,13 +488,13 @@
 
         <div class="s-footer__main">
             <div class="row">
-
+                
                 <div class="col-two md-four mob-full s-footer__sitelinks">
-
+                        
                     <h4>Quick Links</h4>
 
                     <ul class="s-footer__linklist">
-                        <li><a href="#0">Home</a></li>
+                        <li><a href="/">Home</a></li>
                         <li><a href="#0">Blog</a></li>
                         <li><a href="#0">Styles</a></li>
                         <li><a href="#0">About</a></li>
@@ -506,7 +505,7 @@
                 </div> <!-- end s-footer__sitelinks -->
 
                 <div class="col-two md-four mob-full s-footer__archives">
-
+                        
                     <h4>Archives</h4>
 
                     <ul class="s-footer__linklist">
@@ -521,7 +520,7 @@
                 </div> <!-- end s-footer__archives -->
 
                 <div class="col-two md-four mob-full s-footer__social">
-
+                        
                     <h4>Social</h4>
 
                     <ul class="s-footer__linklist">
@@ -536,7 +535,7 @@
                 </div> <!-- end s-footer__social -->
 
                 <div class="col-five md-full end s-footer__subscribe">
-
+                        
                     <h4>Our Newsletter</h4>
 
                     <p>Sit vel delectus amet officiis repudiandae est voluptatem. Tempora maxime provident nisi et fuga et enim exercitationem ipsam. Culpa consequatur occaecati.</p>
@@ -545,11 +544,11 @@
                         <form id="mc-form" class="group" novalidate="true">
 
                             <input type="email" value="" name="EMAIL" class="email" id="mc-email" placeholder="Email Address" required="">
-
+                
                             <input type="submit" name="subscribe" value="Send">
-
+                
                             <label for="mc-email" class="subscribe-message"></label>
-
+                
                         </form>
                     </div>
 
@@ -562,7 +561,7 @@
             <div class="row">
                 <div class="col-full">
                     <div class="s-footer__copyright">
-                        <span>© Copyright Philosophy 2018</span>
+                        <span>© Copyright Philosophy 2018</span> 
                         <span>Site Template by <a href="https://colorlib.com/">Colorlib</a></span>
                     </div>
 

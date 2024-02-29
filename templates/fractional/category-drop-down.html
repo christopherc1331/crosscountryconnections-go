@@ -1,0 +1,8 @@
+<li class="has-children">
+    <a href="#0" title="">Categories</a>
+    <ul class="sub-menu">
+        {{ range .Categories}}
+        <li><a href="?category={{ . }}">{{ . }}</a></li>
+        {{ end }}
+    </ul>
+</li>

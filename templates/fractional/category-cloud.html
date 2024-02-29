@@ -1,0 +1,10 @@
+<div class="row bottom tags-wrap">
+    <div class="col-full tags">
+        <h3>Tags</h3>
+        <div class="tagcloud">
+            {{ range .Categories}}
+            <a href="?category={{ . }}">{{ . }}</a>
+            {{ end }}
+        </div>
+    </div>
+</div>
