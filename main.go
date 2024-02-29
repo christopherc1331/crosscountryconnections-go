@@ -34,6 +34,7 @@ type Article struct {
 	Categories    []string           `bson:"categories"`
 	Title         string             `bson:"title"`
 	Date          string             `bson:"date"`
+	DateTime      string             `bson:"dateTime"`
 	Location      string             `bson:"location"`
 	TextPrimary   string             `bson:"textPrimary"`
 	TextSecondary string             `bson:"textSecondary"`
@@ -90,6 +91,7 @@ func main() {
 	router.HandleFunc("/categories", getCategoriesHandler).Methods("GET")
 	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
 	router.HandleFunc("/articles/highlighted/{rank}", getHighlightedArticleHtmlByRankHandler).Methods("GET")
+	router.HandleFunc("/articles/popular/{count}", getTopPopularArticlesHandler).Methods("GET")
 	router.HandleFunc("/404", get404).Methods("GET")
 
 	// Add a custom 404 handler
@@ -191,6 +193,66 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 		tmpl = template.Must(template.ParseFiles("./templates/article.html"))
 	}
 	templateErr := tmpl.Execute(w, article)
+	if templateErr != nil {
+		log.Fatal(templateErr)
+	}
+}
+
+func getTopPopularArticlesHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	count, err := strconv.Atoi(vars["count"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	articleCollection := client.Database("test").Collection("articles")
+
+	// Create a cursor for the query
+	opts := options.Find().SetSort(bson.D{{"viewCount", -1}}).SetLimit(int64(count))
+	filter := bson.D{{"type", "standard"}}
+	cursor, err := articleCollection.Find(context.Background(), filter, opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(context.Background())
+
+	// get array of articles, but don't render yet
+	articlesArray := make([]Article, 0)
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var article Article
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &article)
+		article.Id = article.ObjectId.Hex()
+		// convert date value into datetime value from  Dec 12, 2017 to 2017-12-12
+		month := article.Date[0:3]
+		day := article.Date[4:6]
+		year := article.Date[7:11]
+
+		// Check if day is a single digit and add a leading zero if necessary
+		if len(day) == 1 {
+			day = "0" + day
+		}
+
+		article.DateTime = year + "-" + month + "-" + day
+
+		articlesArray = append(articlesArray, article)
+	}
+
+	// create a map of articles
+	articles := make(map[string]interface{})
+	articles["PopularArticles"] = articlesArray
+
+	// render the articles
+	tmpl := template.Must(template.ParseFiles("./templates/fractional/popular-articles.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templateErr := tmpl.Execute(w, articles)
 	if templateErr != nil {
 		log.Fatal(templateErr)
 	}
