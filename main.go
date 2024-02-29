@@ -270,7 +270,18 @@ func getCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	categoriesMap := make(map[string]interface{})
 	categoriesMap["Categories"] = categories
 
-	tmpl := template.Must(template.ParseFiles("./templates/fractional/category-cloud.html"))
+	// get query param for type
+	queryParams := r.URL.Query()
+	articleType := queryParams.Get("type")
+
+	// if the 'type' query parameter is dropdown, use the specified template
+	var tmpl *template.Template
+	if articleType == "drop-down" {
+		tmpl = template.Must(template.ParseFiles("./templates/fractional/category-drop-down.html"))
+	} else {
+		tmpl = template.Must(template.ParseFiles("./templates/fractional/category-cloud.html"))
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	templateErr := tmpl.Execute(w, categoriesMap)
 	if templateErr != nil {

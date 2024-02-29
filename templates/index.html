@@ -87,17 +87,7 @@
 
                     <ul class="header__nav">
                         <li class="current"><a href="/" title="">Home</a></li>
-                        <li class="has-children">
-                            <a href="#0" title="">Categories</a>
-                            <ul class="sub-menu">
-                            <li><a href="../category.html">Lifestyle</a></li>
-                            <li><a href="../category.html">Health</a></li>
-                            <li><a href="../category.html">Family</a></li>
-                            <li><a href="../category.html">Management</a></li>
-                            <li><a href="../category.html">Travel</a></li>
-                            <li><a href="../category.html">Work</a></li>
-                            </ul>
-                        </li>
+                        <div hx-swap="outerHTML" hx-get="categories?type=drop-down" hx-trigger="load"></div>
                         <li class="has-children">
                             <a href="#0" title="">Blog</a>
                             <ul class="sub-menu">
@@ -126,12 +116,12 @@
                 <div class="featured">
 
                     <div class="featured__column featured__column--big">
-                        <div hx-get="/articles/highlighted/1" hx-trigger="load"></div>
+                        <div hx-swap="outerHTML" hx-get="/articles/highlighted/1" hx-trigger="load"></div>
                     </div> <!-- end featured__big -->
 
                     <div class="featured__column featured__column--small">
-                        <div hx-get="/articles/highlighted/2" hx-trigger="load"></div>
-                        <div hx-get="/articles/highlighted/3" hx-trigger="load"></div>
+                        <div hx-swap="outerHTML" hx-get="/articles/highlighted/2" hx-trigger="load"></div>
+                        <div hx-swap="outerHTML" hx-get="/articles/highlighted/3" hx-trigger="load"></div>
                     </div> <!-- end featured__small -->
                 </div> <!-- end featured -->
 
@@ -183,7 +173,7 @@
     <section class="s-extra">
 
         <div class="row top">
-            <div hx-get="/articles/popular/6" hx-trigger="load"></div>
+            <div hx-swap="outerHTML" hx-get="/articles/popular/6" hx-trigger="load"></div>
             
             <div class="col-four md-six tab-full about">
                 <h3>About David Andrews</h3>
@@ -212,7 +202,7 @@
 
         </div> <!-- end row -->
 
-        <div hx-get="categories" hx-trigger="load"></div>
+        <div hx-swap="outerHTML" hx-get="categories" hx-trigger="load"></div>
 
     </section> <!-- end s-extra -->
 
