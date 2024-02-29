@@ -86,6 +86,7 @@ func main() {
 
 	router.HandleFunc("/", getIndex)
 	router.HandleFunc("/sample", handlerSample)
+	router.HandleFunc("/categories", getCategoriesHandler).Methods("GET")
 	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
 	router.HandleFunc("/articles/highlighted/{rank}", getHighlightedArticleHtmlByRankHandler).Methods("GET")
 	router.HandleFunc("/404", get404).Methods("GET")
@@ -123,13 +124,6 @@ func main() {
 func get404(w http.ResponseWriter, r *http.Request) {
 	tmpl := template.Must(template.ParseFiles("./static/html/404.html"))
 	tmpl.Execute(w, nil)
-}
-
-func appendTemplateVars(templateVarsMap map[string]interface{}, articles map[string]interface{}) map[string]interface{} {
-	for k, v := range articles {
-		templateVarsMap[k] = v
-	}
-	return templateVarsMap
 }
 
 func getIndex(w http.ResponseWriter, r *http.Request) {
@@ -191,47 +185,24 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getHighlightedArticlesByRank() (map[string]interface{}, error) {
+func getCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	articleCollection := client.Database("test").Collection("articles")
 
-	// Create a cursor for the query
-	// filter out articles with a rank of 0
-	opts := options.Find().SetSort(bson.D{{"rank", 1}})
-	cursor, err := articleCollection.Find(context.Background(), bson.D{{}}, opts)
+	categories, err := articleCollection.Distinct(context.Background(), "categories", bson.D{})
 	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.Background())
-
-	articles := make(map[string]interface{})
-	for cursor.Next(context.Background()) {
-		var result bson.M
-		err := cursor.Decode(&result)
-		if err != nil {
-			return nil, err
-		}
-
-		var article Article
-		bsonBytes, _ := bson.Marshal(result)
-		bson.Unmarshal(bsonBytes, &article)
-		article.Id = article.ObjectId.Hex()
-		log.Println(article.Title, article.Rank)
-
-		tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
-		var tpl bytes.Buffer
-		templateErr := tmpl.Execute(&tpl, article)
-		if templateErr != nil {
-			return nil, templateErr
-		}
-
-		articles[fmt.Sprintf("Highlighted%d", article.Rank)] = template.HTML(tpl.String())
+		log.Fatal(err)
 	}
 
-	if err := cursor.Err(); err != nil {
-		return nil, err
-	}
+	// put categories in a map
+	categoriesMap := make(map[string]interface{})
+	categoriesMap["Categories"] = categories
 
-	return articles, nil
+	tmpl := template.Must(template.ParseFiles("./templates/fractional/category-cloud.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templateErr := tmpl.Execute(w, categoriesMap)
+	if templateErr != nil {
+		log.Fatal(templateErr)
+	}
 }
 
 func getHighlightedArticleHtmlByRankHandler(w http.ResponseWriter, r *http.Request) {
