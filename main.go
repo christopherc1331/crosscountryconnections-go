@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 )
 
 type Film struct {
@@ -87,6 +88,7 @@ func main() {
 	router.Handle("/static/images/thumbs/single/standard/{file:.*}", http.StripPrefix("/static/images/thumbs/single/standard/", http.FileServer(http.Dir("static/images/thumbs/single/standard"))))
 
 	router.HandleFunc("/", getIndex)
+	router.HandleFunc("/archives", getArchivesHandler)
 	router.HandleFunc("/sample", handlerSample)
 	router.HandleFunc("/categories", getCategoriesHandler).Methods("GET")
 	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
@@ -198,6 +200,81 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 		tmpl = template.Must(template.ParseFiles("./templates/article.html"))
 	}
 	templateErr := tmpl.Execute(w, article)
+	if templateErr != nil {
+		log.Fatal(templateErr)
+	}
+}
+
+func getArchivesHandler(w http.ResponseWriter, r *http.Request) {
+	articleCollection := client.Database("test").Collection("articles")
+
+	pipeline := mongo.Pipeline{
+		{
+			{"$addFields", bson.D{
+				{"dateObj", bson.D{{"$dateFromString", bson.D{
+					{"dateString", "$date"},
+					{"format", "%B %d, %Y"},
+				}}}},
+			}},
+		},
+		{
+			{"$project", bson.D{
+				{"monthYear", bson.D{{"$dateToString", bson.D{
+					{"format", "%B %Y"},
+					{"date", "$dateObj"},
+				}}}},
+			}},
+		},
+		{
+			{"$group", bson.D{
+				{"_id", "$monthYear"},
+			}},
+		},
+		{
+			{"$sort", bson.D{
+				{"_id", -1},
+			}},
+		},
+		{
+			{"$limit", 6},
+		},
+	}
+
+	cursor, err := articleCollection.Aggregate(context.Background(), pipeline)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(context.Background())
+
+	var archives []string
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+		archives = append(archives, result["_id"].(string))
+	}
+
+	if err := cursor.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Split each string in the archives array into Month and Year
+	var archivesWithMonthAndYear []map[string]string
+	for _, archive := range archives {
+		split := strings.Split(archive, " ")
+		month := split[0]
+		year := split[1]
+		archivesWithMonthAndYear = append(archivesWithMonthAndYear, map[string]string{"Month": month, "Year": year})
+	}
+
+	archivesMap := make(map[string]interface{})
+	archivesMap["Archives"] = archivesWithMonthAndYear
+
+	tmpl := template.Must(template.ParseFiles("./templates/fractional/archives.html"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templateErr := tmpl.Execute(w, archivesMap)
 	if templateErr != nil {
 		log.Fatal(templateErr)
 	}

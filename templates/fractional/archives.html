@@ -1,0 +1,11 @@
+<div class="col-two md-four mob-full s-footer__archives">
+
+    <h4>Archives</h4>
+
+    <ul class="s-footer__linklist">
+        {{ range .Archives }}
+        <li><a href="?month={{ .Month }}&year={{ .Year }}">{{ .Month }} {{ .Year }}</a></li>
+        {{ end }}
+        </ul>
+
+</div> <!-- end s-footer__archives -->
