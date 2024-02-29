@@ -37,6 +37,7 @@ type Article struct {
 	Location      string             `bson:"location"`
 	TextPrimary   string             `bson:"textPrimary"`
 	TextSecondary string             `bson:"textSecondary"`
+	ViewCount     int                `bson:"viewCount"`
 }
 
 var client *mongo.Client
@@ -165,6 +166,16 @@ func getArticleById(w http.ResponseWriter, r *http.Request) {
 	bsonBytes, _ := bson.Marshal(result)
 	bson.Unmarshal(bsonBytes, &article)
 	article.Id = article.ObjectId.Hex()
+
+	// increment the view count
+	_, err := articleCollection.UpdateOne(
+		context.Background(),
+		bson.D{{"_id", objectId}},
+		bson.D{{"$inc", bson.D{{"viewCount", 1}}}},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Get the query parameters from the request
 	queryParams := r.URL.Query()
