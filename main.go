@@ -357,7 +357,7 @@ func getArticleCardsOrderedByDate(category string, page int) (map[string]interfa
 	}
 
 	// Calculate the number of documents to skip
-	skip := int64((page - 1) * pageSize)
+	skip := int64(page * pageSize)
 
 	if skip < 0 {
 		skip = 0
