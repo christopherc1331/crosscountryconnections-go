@@ -138,7 +138,6 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	month := queryParams.Get("month")
 	year := queryParams.Get("year")
 
-	println("index: queryParams")
 	// Store the incremented page value back in the query parameters
 	queryParams.Set("page", strconv.Itoa(page))
 	r.URL.RawQuery = queryParams.Encode()
@@ -428,7 +427,6 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	pageSize := 13
 	articleCollection := client.Database("test").Collection("articles")
 
-	print("category: ", category)
 	// Create a filter for the query
 	var filter bson.D = bson.D{{}}
 	var conditions []bson.D
@@ -443,7 +441,6 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	if len(conditions) > 0 {
 		filter = append(filter, bson.E{"$and", conditions})
 	}
-	print("filter: ", filter)
 
 	// Calculate the number of documents to skip
 	skip := int64(page * pageSize)
