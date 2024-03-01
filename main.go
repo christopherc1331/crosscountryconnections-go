@@ -138,6 +138,7 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	month := queryParams.Get("month")
 	year := queryParams.Get("year")
 
+	println("index: queryParams")
 	// Store the incremented page value back in the query parameters
 	queryParams.Set("page", strconv.Itoa(page))
 	r.URL.RawQuery = queryParams.Encode()
@@ -427,14 +428,22 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	pageSize := 13
 	articleCollection := client.Database("test").Collection("articles")
 
+	print("category: ", category)
 	// Create a filter for the query
-	var filter bson.D
+	var filter bson.D = bson.D{{}}
+	var conditions []bson.D
+
 	if category != "" {
-		filter = append(filter, bson.E{"categories", category})
+		conditions = append(conditions, bson.D{{"categories", category}})
 	}
 	if month != "" && year != "" {
-		filter = append(filter, bson.E{"date", bson.D{{"$regex", fmt.Sprintf("^%s.*%s", month, year)}}})
+		conditions = append(conditions, bson.D{{"date", bson.M{"$regex": fmt.Sprintf("^%s.*%s", month, year)}}})
 	}
+
+	if len(conditions) > 0 {
+		filter = append(filter, bson.E{"$and", conditions})
+	}
+	print("filter: ", filter)
 
 	// Calculate the number of documents to skip
 	skip := int64(page * pageSize)
@@ -450,8 +459,6 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 		return nil, err
 	}
 	defer cursor.Close(context.Background())
-
-	// Rest of the function remains the same...
 
 	articlesArray := make([]interface{}, 0)
 	for cursor.Next(context.Background()) {
