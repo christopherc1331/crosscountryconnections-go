@@ -137,12 +137,13 @@ func getIndex(w http.ResponseWriter, r *http.Request) {
 	page, err := strconv.Atoi(queryParams.Get("page"))
 	month := queryParams.Get("month")
 	year := queryParams.Get("year")
+	search := queryParams.Get("s")
 
 	// Store the incremented page value back in the query parameters
 	queryParams.Set("page", strconv.Itoa(page))
 	r.URL.RawQuery = queryParams.Encode()
 
-	articleCards, err := getArticleCardsOrderedByDate(category, month, year, page)
+	articleCards, err := getArticleCardsOrderedByDate(category, month, year, page, search)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -423,7 +424,7 @@ func getHighlightedArticleHtmlByRank(rank int) (template.HTML, error) {
 	return template.HTML(tpl.String()), nil
 }
 
-func getArticleCardsOrderedByDate(category string, month string, year string, page int) (map[string]interface{}, error) {
+func getArticleCardsOrderedByDate(category string, month string, year string, page int, search string) (map[string]interface{}, error) {
 	pageSize := 13
 	articleCollection := client.Database("test").Collection("articles")
 
@@ -436,6 +437,13 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	}
 	if month != "" && year != "" {
 		conditions = append(conditions, bson.D{{"date", bson.M{"$regex": fmt.Sprintf("^%s.*%s", month, year)}}})
+	}
+	if search != "" {
+		conditions = append(conditions, bson.D{{"$or", []bson.D{
+			{{"title", bson.M{"$regex": search, "$options": "i"}}},
+			{{"textPrimary", bson.M{"$regex": search, "$options": "i"}}},
+			{{"textSecondary", bson.M{"$regex": search, "$options": "i"}}},
+		}}})
 	}
 
 	if len(conditions) > 0 {
