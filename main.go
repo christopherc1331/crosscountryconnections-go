@@ -433,7 +433,10 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	var filter bson.D = bson.D{{}}
 	var conditions []bson.D
 
-	conditions = append(conditions, bson.D{{"isArchived", false}})
+	conditions = append(conditions, bson.D{{"$or", []bson.D{
+		{{"isArchived", false}},
+		{{"isArchived", bson.M{"$exists": false}}},
+	}}})
 
 	if category != "" {
 		conditions = append(conditions, bson.D{{"categories", category}})
