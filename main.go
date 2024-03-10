@@ -40,6 +40,7 @@ type Article struct {
 	TextPrimary   string             `bson:"textPrimary"`
 	TextSecondary string             `bson:"textSecondary"`
 	ViewCount     int                `bson:"viewCount"`
+	IsArchived    bool               `bson:"isArchived"`
 }
 
 var client *mongo.Client
@@ -431,6 +432,8 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	// Create a filter for the query
 	var filter bson.D = bson.D{{}}
 	var conditions []bson.D
+
+	conditions = append(conditions, bson.D{{"isArchived", false}})
 
 	if category != "" {
 		conditions = append(conditions, bson.D{{"categories", category}})
