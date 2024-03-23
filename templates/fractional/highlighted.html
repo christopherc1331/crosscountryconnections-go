@@ -1,20 +1,22 @@
-<div class="entry" style="background-image:url('{{ .Img }}');">
-    <div class="entry__content">
-        {{ range .Categories }}
-            <span class="entry__category"><a href="?category={{ . }}">{{ . }}</a></span>
-        {{ end }}
+{{ range . }}
+    <div class="entry" style="background-image:url('{{ .Img }}');">
+        <div class="entry__content">
+            {{ range .Categories }}
+                <span class="entry__category"><a href="?category={{ . }}">{{ . }}</a></span>
+            {{ end }}
 
-        <h1><a href="articles/{{ .Id }}" title="">{{ .Title }}.</a></h1>
+            <h1><a href="articles/{{ .Id }}" title="">{{ .Title }}.</a></h1>
 
-        <div class="entry__info">
-            <a href="#0" class="entry__profile-pic">
-                <img class="avatar" src="/static/images/avatars/davido.png" alt="">
-            </a>
+            <div class="entry__info">
+                <a href="#0" class="entry__profile-pic">
+                    <img class="avatar" src="/static/images/avatars/davido.png" alt="">
+                </a>
 
-            <ul class="entry__meta">
-                <li><a href="#0">{{ .Author }}</a></li>
-                <li>{{ .Date }}</li>
-            </ul>
-        </div>
-    </div> <!-- end entry__content -->
-</div> <!-- end entry -->
+                <ul class="entry__meta">
+                    <li><a href="#0">{{ .Author }}</a></li>
+                    <li>{{ .Date }}</li>
+                </ul>
+            </div>
+        </div> <!-- end entry__content -->
+    </div> <!-- end entry -->
+{{ end }}

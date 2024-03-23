@@ -93,7 +93,7 @@ func main() {
 	router.HandleFunc("/sample", handlerSample)
 	router.HandleFunc("/categories", getCategoriesHandler).Methods("GET")
 	router.HandleFunc("/articles/{id}", getArticleById).Methods("GET")
-	router.HandleFunc("/articles/highlighted/{rank}", getHighlightedArticleHtmlByRankHandler).Methods("GET")
+	router.HandleFunc("/articles/highlighted/{type}", getHighlightedArticleHtmlByRankHandler).Methods("GET")
 	router.HandleFunc("/articles/popular/{count}", getTopPopularArticlesHandler).Methods("GET")
 	router.HandleFunc("/404", get404).Methods("GET")
 
@@ -377,13 +377,9 @@ func getCategoriesHandler(w http.ResponseWriter, r *http.Request) {
 
 func getHighlightedArticleHtmlByRankHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	rank, err := strconv.Atoi(vars["rank"])
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	rankType := vars["type"]
 
-	html, err := getHighlightedArticleHtmlByRank(rank)
+	html, err := getHighlightedArticleHtmlByRank(rankType)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -393,30 +389,45 @@ func getHighlightedArticleHtmlByRankHandler(w http.ResponseWriter, r *http.Reque
 	w.Write([]byte(html))
 }
 
-func getHighlightedArticleHtmlByRank(rank int) (template.HTML, error) {
+func getHighlightedArticleHtmlByRank(rankType string) (template.HTML, error) {
 	// Connect to the MongoDB collection
 	articleCollection := client.Database("test").Collection("articles")
 
-	// Query the collection to find an article with the specified rank
-	filter := bson.D{{"rank", rank}}
-	var result bson.M
-	err := articleCollection.FindOne(context.Background(), filter).Decode(&result)
+	var filter bson.D
+	if rankType == "primary" {
+		filter = bson.D{{"rank", 1}}
+	} else {
+		filter = bson.D{{"rank", bson.D{{"$gt", 1}, {"$lt", 4}}}}
+	} // Query the collection to find all articles
+	var results []Article
+	cursor, err := articleCollection.Find(context.Background(), filter)
 	if err != nil {
-		return "", err
+		log.Fatal(err)
+	}
+	defer cursor.Close(context.Background())
+
+	for cursor.Next(context.Background()) {
+		var result bson.M
+		err := cursor.Decode(&result)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var article Article
+		bsonBytes, _ := bson.Marshal(result)
+		bson.Unmarshal(bsonBytes, &article)
+		article.Id = article.ObjectId.Hex()
+		results = append(results, article)
 	}
 
-	// Parse the article into the Article struct
-	var article Article
-	bsonBytes, _ := bson.Marshal(result)
-	bson.Unmarshal(bsonBytes, &article)
-	article.Id = article.ObjectId.Hex()
+	if err := cursor.Err(); err != nil {
+		log.Fatal(err)
+	}
 
-	// Parse the template file
 	tmpl := template.Must(template.ParseFiles("./templates/fractional/highlighted.html"))
 
 	// Execute the template with the article as the data to be rendered
 	var tpl bytes.Buffer
-	err = tmpl.Execute(&tpl, article)
+	err = tmpl.Execute(&tpl, results)
 	if err != nil {
 		return "", err
 	}
