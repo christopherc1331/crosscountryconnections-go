@@ -440,32 +440,23 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	pageSize := 13
 	articleCollection := client.Database("test").Collection("articles")
 
-	// Create a filter for the query
-	var filter bson.D = bson.D{{}}
-	var conditions []bson.D
-
-	conditions = append(conditions, bson.D{{"$or", []bson.D{
-		{{"isArchived", false}},
-		{{"isArchived", bson.M{"$exists": false}}},
-	}}})
+	filter := bson.M{}
 
 	if category != "" {
-		conditions = append(conditions, bson.D{{"categories", category}})
+		filter["categories"] = category
 	}
 	if month != "" && year != "" {
-		conditions = append(conditions, bson.D{{"date", bson.M{"$regex": fmt.Sprintf("^%s.*%s", month, year)}}})
+		filter["date"] = bson.M{"$regex": fmt.Sprintf("^%s.*%s", month, year)}
 	}
 	if search != "" {
-		conditions = append(conditions, bson.D{{"$or", []bson.D{
-			{{"title", bson.M{"$regex": search, "$options": "i"}}},
-			{{"textPrimary", bson.M{"$regex": search, "$options": "i"}}},
-			{{"textSecondary", bson.M{"$regex": search, "$options": "i"}}},
-		}}})
+		filter["$or"] = []bson.M{
+			{"title": bson.M{"$regex": search, "$options": "i"}},
+			{"textPrimary": bson.M{"$regex": search, "$options": "i"}},
+			{"textSecondary": bson.M{"$regex": search, "$options": "i"}},
+		}
 	}
 
-	if len(conditions) > 0 {
-		filter = append(filter, bson.E{"$and", conditions})
-	}
+	filter["isArchived"] = bson.M{"$ne": true}
 
 	// Calculate the number of documents to skip
 	skip := int64(page * pageSize)
