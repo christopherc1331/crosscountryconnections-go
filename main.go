@@ -297,12 +297,6 @@ func getTopPopularArticlesHandler(w http.ResponseWriter, r *http.Request) {
 	// Create a cursor for the query
 	opts := options.Find().SetSort(bson.D{{"viewCount", -1}}).SetLimit(int64(count))
 	filter := bson.D{{"type", "standard"}}
-	conditions := bson.D{{"$or", []bson.D{
-		{{"isArchived", false}},
-		{{"isArchived", bson.M{"$exists": false}}},
-	}}}
-
-	filter = append(filter, bson.E{"$and", conditions})
 	cursor, err := articleCollection.Find(context.Background(), filter, opts)
 	if err != nil {
 		log.Fatal(err)
@@ -406,13 +400,6 @@ func getHighlightedArticleHtmlByRank(rankType string) (template.HTML, error) {
 		filter = bson.D{{"rank", bson.D{{"$gt", 1}, {"$lt", 4}}}}
 	} // Query the collection to find all articles
 	var results []Article
-
-	conditions := bson.D{{"$or", []bson.D{
-		{{"isArchived", false}},
-		{{"isArchived", bson.M{"$exists": false}}},
-	}}}
-
-	filter = append(filter, bson.E{"$and", conditions})
 	cursor, err := articleCollection.Find(context.Background(), filter)
 	if err != nil {
 		log.Fatal(err)
