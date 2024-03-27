@@ -15,8 +15,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Film struct {
@@ -473,7 +475,7 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	}
 	defer cursor.Close(context.Background())
 
-	articlesArray := make([]interface{}, 0)
+	articlesArray := make([]Article, 0)
 	for cursor.Next(context.Background()) {
 		var result bson.M
 		err := cursor.Decode(&result)
@@ -491,6 +493,19 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 			continue
 		}
 
+		articlesArray = append(articlesArray, article)
+	}
+
+	// Sort the articles by date
+	sort.Slice(articlesArray, func(i, j int) bool {
+		dateI, _ := time.Parse("January 2, 2006", articlesArray[i].Date)
+		dateJ, _ := time.Parse("January 2, 2006", articlesArray[j].Date)
+		return dateI.After(dateJ)
+	})
+
+	// Render the template for each sorted article and store the rendered HTML
+	renderedArticlesArray := make([]interface{}, 0)
+	for _, article := range articlesArray {
 		var tmpl *template.Template
 		switch article.Type {
 		case "standard":
@@ -510,7 +525,7 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 			return nil, templateErr
 		}
 
-		articlesArray = append(articlesArray, template.HTML(tpl.String()))
+		renderedArticlesArray = append(renderedArticlesArray, template.HTML(tpl.String()))
 	}
 
 	if err := cursor.Err(); err != nil {
@@ -518,10 +533,9 @@ func getArticleCardsOrderedByDate(category string, month string, year string, pa
 	}
 
 	articles := make(map[string]interface{})
-	articles["ArticleCards"] = articlesArray
+	articles["ArticleCards"] = renderedArticlesArray
 
 	return articles, nil
-
 }
 
 func handlerSample(w http.ResponseWriter, r *http.Request) {
