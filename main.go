@@ -439,7 +439,7 @@ func getHighlightedArticleHtmlByRank(rankType string) (template.HTML, error) {
 }
 
 func getArticleCardsOrderedByDate(category string, month string, year string, page int, search string) (map[string]interface{}, error) {
-	pageSize := 13
+	pageSize := 14
 	articleCollection := client.Database("test").Collection("articles")
 
 	filter := bson.M{}
